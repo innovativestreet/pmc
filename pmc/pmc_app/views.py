@@ -82,9 +82,8 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                     qes_ans_resp = requests.post(url=f"{settings.API_BASE_URL}/api/v1/question_answer_mapping/",
                                                  data=json.dumps(answer_request), headers=header)
 
-                    if qes_ans_resp.status_code in [200, 201]:
-                        if question_creation_resp.status_code not in [200, 201]:
-                            return JsonResponse({"msg": "Question not created", "error": True},
+                    if qes_ans_resp.status_code not in [200, 201]:
+                        return JsonResponse({"msg": "Question not created", "error": True},
                                                 status=status.is_success())
 
             return JsonResponse({"msg": "Question Created Successfully", "error": False},
