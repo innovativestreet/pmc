@@ -20,7 +20,10 @@ from pmc_app import views as pmc_views
 
 router = DefaultRouter()
 router.register(r'user_profile', pmc_views.UserProfileViewSet, basename='user_profile')
+router.register(r'create_question', pmc_views.QuestionMasterViewSet, basename='create_question')
+router.register(r'question_answer_mapping', pmc_views.AnswerMasterViewSet, basename='question_answer_mapping')
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path('api/v1/', include(router.urls))
 ]
