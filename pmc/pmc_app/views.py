@@ -59,6 +59,12 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                 return JsonResponse({"msg": "Question is mandatory", "error": True},
                                     status=status.HTTP_400_BAD_REQUEST)
 
+            request.data['question_is_active'] = request.data.get('question', 1)
+            request.data['question_gender_group_id'] = request.data.get('question_gender_group_id', 0)
+            request.data['question_age_group_id'] = request.data.get('question_age_group_id', 0)
+            request.data['question_type_id'] = request.data.get('question_type_id', 0)
+            request.data['question_category_id'] = request.data.get('question_category_id', 0)
+
             question_creation_resp = super(QuestionMasterViewSet, self).create(request)
 
             if question_creation_resp.status_code not in [200, 201]:
@@ -70,7 +76,7 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                 answer_key = "answer_" + str(i)
                 weight_key = "weight_" + str(i)
                 answer = request.data.get(answer_key, None)
-                weight = request.data.get(weight_key, None)
+                weight = request.data.get(weight_key, 1)
                 if answer is not None:
                     answer_request = {
                         "question_id": question_id,
@@ -82,9 +88,8 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                     qes_ans_resp = requests.post(url=f"{settings.API_BASE_URL}/api/v1/question_answer_mapping/",
                                                  data=json.dumps(answer_request), headers=header)
 
-                    if qes_ans_resp.status_code in [200, 201]:
-                        if question_creation_resp.status_code not in [200, 201]:
-                            return JsonResponse({"msg": "Question not created", "error": True},
+                    if qes_ans_resp.status_code not in [200, 201]:
+                        return JsonResponse({"msg": "Question's answer not mapped", "error": True},
                                                 status=status.is_success())
 
             return JsonResponse({"msg": "Question Created Successfully", "error": False},
