@@ -11,6 +11,17 @@ class UserRoles(models.Model):
         ]
 
 
+class UserRoles(models.Model):
+    # 1 -> admin, 2 -> patient, 3 -> doctor
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    class Meta:
+        db_table = 'user_roles'
+        indexes = [
+            models.Index(fields=['id'])
+        ]
+
+
 class UserProfile(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -30,6 +41,24 @@ class UserProfile(models.Model):
         indexes = [
             models.Index(fields=['id'])
         ]
+
+class UserScoreQuestionCatMapping(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_id = models.PositiveIntegerField()
+    user_score = models.PositiveIntegerField()
+    question_type_id = models.PositiveIntegerField()
+    question_cat_id = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now_add=True, null=True)
+    class Meta:
+        db_table = 'user_score_question_type_cat_mapping'
+        indexes = [
+            models.Index(fields=['id']),
+            models.Index(fields=['user_id']),
+            models.Index(fields=['question_type_id']),
+            models.Index(fields=['question_cat_id']),
+        ]
+
 
 class UserScoreQuestionCatMapping(models.Model):
     id = models.AutoField(primary_key=True)
@@ -77,6 +106,7 @@ class AnswerMaster(models.Model):
         indexes = [
             models.Index(fields=['id'])
         ]
+
 
 class AgeGroupMaster(models.Model):
     # Neutral = 0
