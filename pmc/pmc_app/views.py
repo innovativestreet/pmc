@@ -5,6 +5,7 @@ from rest_framework import viewsets, permissions, status, views
 import requests
 import json
 
+from pmc.helper_functions import ValidateRequestData, ResponseHandler
 from pmc_app.models import UserProfile, QuestionMaster, AnswerMaster, QuestionCategoryMaster, \
     QuestionTypeMaster, AgeGroupMaster
 from pmc_app.searializers import UserProfileSerializer, QuestionMasterSerializer, AnswerMasterSerializer, \
@@ -16,6 +17,28 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     queryset = UserProfile.objects.all()
     http_method_names = ['get', 'post', 'patch']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            request_data_validation = ValidateRequestData(request.data)
+            request_data_validation.has(['email', 'mobile'])
+            errors = request_data_validation.has_errors()
+            if errors:
+                response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
+                return response.response_handler()
+
+            user_creation_resp = super(UserProfileViewSet, self).create(request)
+
+            if user_creation_resp.status_code not in [200, 201]:
+                response = ResponseHandler([], "User not created", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
+
+            response = ResponseHandler([], "User Successfully Created", False, status.HTTP_200_OK)
+            return response.response_handler()
+
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
 
 
 class QuestionCategoryMasterViewSet(viewsets.ModelViewSet):
@@ -54,23 +77,31 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            question = request.data.get('question', None)
-            if question is None:
-                return JsonResponse({"msg": "Question is mandatory", "error": True},
-                                    status=status.HTTP_400_BAD_REQUEST)
+            request_data_validation = ValidateRequestData(request.data)
+            request_data_validation.has(['question', 'answer_1', 'weight_1'])
+            errors = request_data_validation.has_errors()
+            if errors:
+                response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
+                return response.response_handler()
+
+            request.data['question_is_active'] = request.data.get('question_is_active', 1)
+            request.data['question_gender_group_id'] = request.data.get('question_gender_group_id', 1)
+            request.data['question_age_group_id'] = request.data.get('question_age_group_id', 1)
+            request.data['question_type_id'] = request.data.get('question_type_id', 1)
+            request.data['question_category_id'] = request.data.get('question_category_id', 1)
 
             question_creation_resp = super(QuestionMasterViewSet, self).create(request)
 
             if question_creation_resp.status_code not in [200, 201]:
-                return JsonResponse({"msg": "Question not created", "error": True},
-                                    status=status.is_success())
+                response = ResponseHandler([], "Question not created", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
 
             question_id = question_creation_resp.data["id"]
             for i in [1, 2, 3, 4, 5]:
                 answer_key = "answer_" + str(i)
                 weight_key = "weight_" + str(i)
                 answer = request.data.get(answer_key, None)
-                weight = request.data.get(weight_key, None)
+                weight = request.data.get(weight_key, 1)
                 if answer is not None:
                     answer_request = {
                         "question_id": question_id,
@@ -83,13 +114,16 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                                                  data=json.dumps(answer_request), headers=header)
 
                     if qes_ans_resp.status_code not in [200, 201]:
-                        return JsonResponse({"msg": "Question not created", "error": True},
-                                                status=status.is_success())
+                        response = ResponseHandler([], "Question's answer not mapped", True,
+                                                   status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        return response.response_handler()
 
-            return JsonResponse({"msg": "Question Created Successfully", "error": False},
-                                status=status.HTTP_200_OK)
+
+            response = ResponseHandler([], "Question Created Successfully", False, status.HTTP_200_OK)
+            return response.response_handler()
 
         except Exception as e:
-            return JsonResponse({"msg": "Something went wrong", "error": True},
-                                status=status.is_success())
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
+
 
