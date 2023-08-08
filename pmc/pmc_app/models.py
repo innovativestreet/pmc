@@ -1,14 +1,5 @@
 from django.db import models
-
-class UserRoles(models.Model):
-    # 1 -> admin, 2 -> patient, 3 -> doctor
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=True, blank=True)
-    class Meta:
-        db_table = 'user_roles'
-        indexes = [
-            models.Index(fields=['id'])
-        ]
+from phone_field import PhoneField
 
 
 class UserRoles(models.Model):
@@ -28,9 +19,9 @@ class UserProfile(models.Model):
     gender = models.CharField(max_length=10, null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
-    mobile = models.PositiveIntegerField(null=True, blank=True)
+    mobile = PhoneField(null=True, blank=True, help_text='Contact phone number')
     score = models.PositiveIntegerField(null=True, blank=True)
-    role = models.PositiveIntegerField(default=1)
+    role = models.PositiveIntegerField(default=2)  # always enters as patient
     address = models.CharField(max_length=255, null=True, blank=True)
     address1 = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -42,23 +33,6 @@ class UserProfile(models.Model):
             models.Index(fields=['id'])
         ]
 
-class UserScoreQuestionCatMapping(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.PositiveIntegerField()
-    user_score = models.PositiveIntegerField()
-    question_type_id = models.PositiveIntegerField()
-    question_cat_id = models.PositiveIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now_add=True, null=True)
-    class Meta:
-        db_table = 'user_score_question_type_cat_mapping'
-        indexes = [
-            models.Index(fields=['id']),
-            models.Index(fields=['user_id']),
-            models.Index(fields=['question_type_id']),
-            models.Index(fields=['question_cat_id']),
-        ]
-
 
 class UserScoreQuestionCatMapping(models.Model):
     id = models.AutoField(primary_key=True)
@@ -71,26 +45,24 @@ class UserScoreQuestionCatMapping(models.Model):
     class Meta:
         db_table = 'user_score_question_type_cat_mapping'
         indexes = [
-            models.Index(fields=['id']),
-            models.Index(fields=['user_id']),
-            models.Index(fields=['question_type_id']),
-            models.Index(fields=['question_cat_id']),
+            models.Index(fields=['id', 'user_id', 'question_type_id', 'question_cat_id']),
         ]
+
 
 class QuestionMaster(models.Model):
     id = models.AutoField(primary_key=True)
     question = models.CharField(max_length=500, null=True, blank=True)
-    question_gender_group_id = models.PositiveIntegerField(default=0)
-    question_age_group_id = models.PositiveIntegerField(default=0)
-    question_type_id = models.PositiveIntegerField(default=0)
-    question_category_id = models.PositiveIntegerField(default=0)
+    question_gender_group_id = models.PositiveIntegerField(default=1)
+    question_age_group_id = models.PositiveIntegerField(default=1)
+    question_type_id = models.PositiveIntegerField(default=1)
+    question_category_id = models.PositiveIntegerField(default=1)
     question_is_active = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now_add=True, null=True)
     class Meta:
         db_table = 'question_master'
         indexes = [
-            models.Index(fields=['id'])
+            models.Index(fields=['id', 'question_type_id', 'question_category_id'])
         ]
 
 
@@ -104,7 +76,7 @@ class AnswerMaster(models.Model):
     class Meta:
         db_table = 'answer_master'
         indexes = [
-            models.Index(fields=['id'])
+            models.Index(fields=['id', 'question_id'])
         ]
 
 
@@ -117,7 +89,6 @@ class AgeGroupMaster(models.Model):
     # Old Age > 64 Years
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True, blank=True)
-    value = models.PositiveIntegerField(null=True, blank=True)
     min_age = models.PositiveIntegerField(null=True, blank=True)
     max_age = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -133,7 +104,6 @@ class QuestionTypeMaster(models.Model):
     # Neutral (0), Personal (1), Professional (2), Surrounding (3), Health (4), Ethics (5)
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True, blank=True)
-    value = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now_add=True, null=True)
     class Meta:
@@ -147,7 +117,6 @@ class QuestionCategoryMaster(models.Model):
     # Neutral (0), Anxity (1), Depression (2)
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True, blank=True)
-    value = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now_add=True, null=True)
     class Meta:
