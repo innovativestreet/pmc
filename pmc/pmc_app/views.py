@@ -118,7 +118,6 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
                                                    status.HTTP_500_INTERNAL_SERVER_ERROR)
                         return response.response_handler()
 
-
             response = ResponseHandler([], "Question Created Successfully", False, status.HTTP_200_OK)
             return response.response_handler()
 
