@@ -4,6 +4,7 @@ venv/*
 .idea/
 
 pmc/__pycache__/
+pmc/__pycache__/*
 pmc/pmc_app/__pycache__
 pmc/pmc/local_settings.py
 pmc/pmc_app/migrations/*
