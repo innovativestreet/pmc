@@ -114,7 +114,7 @@ class QuestionTypeMaster(models.Model):
 
 
 class QuestionCategoryMaster(models.Model):
-    # Neutral (0), Anxity (1), Depression (2)
+    # Neutral (1), Anxity (2), Depression (3), I.Q (4)
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

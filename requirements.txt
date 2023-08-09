@@ -4,3 +4,5 @@ djangorestframework==3.12.4
 mysqlclient==2.0.3
 django-phone-field==1.8.1
 requests==2.31.0
+django-rest-swagger==2.2.0
+drf-yasg==1.21.7

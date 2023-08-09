@@ -40,6 +40,19 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
             return response.response_handler()
 
+    def update(self, request, *args, **kwargs):
+        try:
+            user_update_resp = super(UserProfileViewSet, self).update(request, partial=True)
+            if user_update_resp.status_code not in [200, 201]:
+                response = ResponseHandler([], "Update Failed", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
+
+            response = ResponseHandler([], "Updated Successfully", False, status.HTTP_200_OK)
+            return response.response_handler()
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
+
 
 class QuestionCategoryMasterViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -66,7 +79,19 @@ class AnswerMasterViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = AnswerMasterSerializer
     queryset = AnswerMaster.objects.all()
-    http_method_names = ['get', 'post', 'patch']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            records = AnswerMaster.objects.filter(question_id=kwargs['pk']).delete()
+            if records[0] > 0:
+                response = ResponseHandler([], "Records Deleted", False, status.HTTP_200_OK)
+                return response.response_handler()
+            response = ResponseHandler([], "Records Not Found", False, status.HTTP_200_OK)
+            return response.response_handler()
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
 
 
 class QuestionMasterViewSet(viewsets.ModelViewSet):
@@ -125,4 +150,50 @@ class QuestionMasterViewSet(viewsets.ModelViewSet):
             response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
             return response.response_handler()
 
+    def update(self, request, *args, **kwargs):
+        """
+        In QuestionMaster Table: partial update will be perform
+        In AnswerMaster Table: remove existing record for question id and create new record
+        """
+        try:
+            question_creation_resp = super(QuestionMasterViewSet, self).update(request, partial=True)
 
+            if question_creation_resp.status_code not in [200, 201]:
+                response = ResponseHandler([], "Update Failed", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
+
+            question_id = question_creation_resp.data["id"]
+            header = {'Content-Type': 'application/json'}
+            delete_exiting_data = requests.delete(
+                url=f"{settings.API_BASE_URL}/api/v1/question_answer_mapping/{question_id}/",
+                headers=header)
+            if delete_exiting_data.status_code not in [200, 201]:
+                response = ResponseHandler([], "Deletion failed for existing records", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
+
+            for i in [1, 2, 3, 4, 5]:
+                answer_key = "answer_" + str(i)
+                weight_key = "weight_" + str(i)
+                answer = request.data.get(answer_key, None)
+                weight = request.data.get(weight_key, 1)
+                if answer is not None:
+                    answer_request = {
+                        "question_id": question_id,
+                        "answer": answer,
+                        "answer_weightage": weight
+                    }
+
+                    qes_ans_resp = requests.post(url=f"{settings.API_BASE_URL}/api/v1/question_answer_mapping/",
+                                                 data=json.dumps(answer_request), headers=header)
+
+                    if qes_ans_resp.status_code not in [200, 201]:
+                        response = ResponseHandler([], "Question's answer not mapped", True,
+                                                   status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        return response.response_handler()
+
+            response = ResponseHandler([], "Question Updated Successfully", False, status.HTTP_200_OK)
+            return response.response_handler()
+
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
