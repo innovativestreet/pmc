@@ -19,8 +19,8 @@ from rest_framework.routers import DefaultRouter
 from pmc_app import views as pmc_views
 
 router = DefaultRouter()
-router.register(r'user_profile', pmc_views.UserProfileViewSet, basename='user_profile')
-router.register(r'create_question', pmc_views.QuestionMasterViewSet, basename='create_question')
+router.register(r'user', pmc_views.UserProfileViewSet, basename='user_profile')
+router.register(r'question', pmc_views.QuestionMasterViewSet, basename='question')
 router.register(r'question_answer_mapping', pmc_views.AnswerMasterViewSet, basename='question_answer_mapping')
 
 urlpatterns = [
