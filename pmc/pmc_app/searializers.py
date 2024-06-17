@@ -2,6 +2,12 @@ from rest_framework import serializers
 from pmc_app.models import *
 
 
+class AmbassadorDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AmbassadorData
+        fields = "__all__"
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
