@@ -206,6 +206,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
             email = request.data.get('email')
             mobile = request.data.get('mobile')
+
             user_data = pd.DataFrame(UserProfile.objects.filter(mobile=mobile).values())
             if not user_data.empty:
                 response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)

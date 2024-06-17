@@ -19,7 +19,7 @@ class UserProfile(models.Model):
     gender = models.CharField(max_length=10, null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
-    mobile = PhoneField(null=True, blank=True, help_text='Contact phone number')
+    mobile = models.CharField(max_length=15, null=True, blank=True, help_text='Contact phone number')
     score = models.PositiveIntegerField(null=True, blank=True)
     role = models.PositiveIntegerField(default=2)  # always enters as patient
     address = models.CharField(max_length=255, null=True, blank=True)
