@@ -72,7 +72,7 @@ class AmbassadorViewSet(viewsets.ModelViewSet):
                 user_email = user_data["email"][0]
                 user_mobile = user_data["mobile"][0]
 
-                data = {"user_name": user_name, "user_email": user_email, "user_mobile": user_mobile.formatted, "user_approved": is_user_approved}
+                data = {"user_name": user_name, "user_email": user_email, "user_mobile": user_mobile, "user_approved": is_user_approved}
                 result.append(data)
 
             total_onboarded_user = len(result)
@@ -206,6 +206,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
             email = request.data.get('email')
             mobile = request.data.get('mobile')
+
             user_data = pd.DataFrame(UserProfile.objects.filter(mobile=mobile).values())
             if not user_data.empty:
                 response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)
