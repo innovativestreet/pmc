@@ -24,19 +24,27 @@ class AmbassadorViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             request_data_validation = ValidateRequestData(request.data)
-            request_data_validation.has(['name', 'mobile', 'created_by'])
+            request_data_validation.has(['name', 'email', 'mobile', 'created_by'])
             errors = request_data_validation.has_errors()
             if errors:
                 response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
                 return response.response_handler()
 
-            user_creation_resp = super(AmbassadorViewSet, self).create(request)
-
-            if user_creation_resp.status_code not in [200, 201]:
-                response = ResponseHandler([], "Data not added", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            mobile = request.data.get('mobile')
+            user_data = pd.DataFrame(UserProfile.objects.filter(mobile=mobile).values())
+            if user_data.empty:
+                response = ResponseHandler([], "User not exits, ask user to give test.", True, status.HTTP_200_OK)
                 return response.response_handler()
 
-            response = ResponseHandler([], "Data added successfully", False, status.HTTP_200_OK)
+            ambassador_data = pd.DataFrame(AmbassadorData.objects.filter(user_id=user_data['id'][0]).values())
+            if not ambassador_data.empty:
+                response = ResponseHandler([], "User is already mapped with ambassador.", True, status.HTTP_200_OK)
+                return response.response_handler()
+
+            obj = AmbassadorData(user_id=user_data['id'][0], created_by=request.data.get('created_by'), is_approved=0)
+            obj.save()
+
+            response = ResponseHandler([], "User mapped successfully", False, status.HTTP_200_OK)
             return response.response_handler()
 
         except Exception as e:
@@ -52,13 +60,21 @@ class AmbassadorViewSet(viewsets.ModelViewSet):
                 return response.response_handler()
 
             result = []
-            for index, user in ambassador_data.iterrows():
-                user_name = user["name"]
-                user_gender = user["gender"]
-                user_mobile = user["mobile"]
-                is_user_approved = user["is_approved"]
-                data = {"user_name": user_name, "user_gender": user_gender, "user_mobile": user_mobile, "user_approved": is_user_approved}
+            for index, ambassador in ambassador_data.iterrows():
+                user_id = ambassador["user_id"]
+                is_user_approved = ambassador["is_approved"]
+
+                user_data = pd.DataFrame(UserProfile.objects.filter(id=user_id).values())
+                if user_data.empty:
+                    continue
+
+                user_name = user_data["name"][0]
+                user_email = user_data["email"][0]
+                user_mobile = user_data["mobile"][0]
+
+                data = {"user_name": user_name, "user_email": user_email, "user_mobile": user_mobile.formatted, "user_approved": is_user_approved}
                 result.append(data)
+
             total_onboarded_user = len(result)
             total_earning = 100 # TODO: need logic
 
@@ -190,7 +206,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
             email = request.data.get('email')
             mobile = request.data.get('mobile')
-            user_data = pd.DataFrame(UserProfile.objects.filter(email=email, mobile=mobile).values())
+
+            user_data = pd.DataFrame(UserProfile.objects.filter(mobile=mobile).values())
             if not user_data.empty:
                 response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)
                 return response.response_handler()

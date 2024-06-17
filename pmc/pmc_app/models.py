@@ -26,7 +26,6 @@ class UserProfile(models.Model):
     address1 = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now_add=True, null=True)
-    created_by = models.PositiveIntegerField(null=True, blank=True)
     username = models.CharField(max_length=255, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     total_coins = models.PositiveIntegerField(null=True, blank=True)
@@ -148,15 +147,11 @@ class VideoMaster(models.Model):
 
 class AmbassadorData(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=True, blank=True)
-    gender = models.CharField(max_length=10, null=True, blank=True)
-    age = models.PositiveIntegerField(null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
-    mobile = models.BigIntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now_add=True, null=True)
+    user_id = models.PositiveIntegerField(null=True, blank=True)
     created_by = models.PositiveIntegerField(null=True, blank=True)
     is_approved = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
         db_table = 'ambassador_data'
