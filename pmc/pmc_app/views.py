@@ -188,6 +188,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
                 return response.response_handler()
 
+            email = request.data.get('email')
+            mobile = request.data.get('mobile')
+            user_data = pd.DataFrame(UserProfile.objects.filter(email=email, mobile=mobile).values())
+            if not user_data.empty:
+                response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)
+                return response.response_handler()
+
             user_creation_resp = super(UserProfileViewSet, self).create(request)
 
             if user_creation_resp.status_code not in [200, 201]:
