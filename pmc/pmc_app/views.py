@@ -1,22 +1,183 @@
 from django.shortcuts import render
 from django.http import HttpResponse, FileResponse, JsonResponse
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from django.conf import settings
 from rest_framework import viewsets, permissions, status, views
 import requests
 import json
+import pandas as pd
 
 from pmc.helper_functions import ValidateRequestData, ResponseHandler
 from pmc_app.models import UserProfile, QuestionMaster, AnswerMaster, QuestionCategoryMaster, \
-    QuestionTypeMaster, AgeGroupMaster
-from pmc_app.searializers import UserProfileSerializer, QuestionMasterSerializer, AnswerMasterSerializer, \
+    QuestionTypeMaster, AgeGroupMaster, AmbassadorData
+from pmc_app.searializers import AmbassadorDataSerializer, UserProfileSerializer, QuestionMasterSerializer, AnswerMasterSerializer, \
     QuestionCategoryMasterSerializer, QuestionTypeMasterSerializer, AgeGroupMasterSerializer
+
+
+class AmbassadorViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = AmbassadorDataSerializer
+    queryset = AmbassadorData.objects.all()
+    http_method_names = ['get', 'post', 'patch']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            request_data_validation = ValidateRequestData(request.data)
+            request_data_validation.has(['name', 'mobile', 'created_by'])
+            errors = request_data_validation.has_errors()
+            if errors:
+                response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
+                return response.response_handler()
+
+            user_creation_resp = super(AmbassadorViewSet, self).create(request)
+
+            if user_creation_resp.status_code not in [200, 201]:
+                response = ResponseHandler([], "Data not added", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return response.response_handler()
+
+            response = ResponseHandler([], "Data added successfully", False, status.HTTP_200_OK)
+            return response.response_handler()
+
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            ambassador_id = int(kwargs["pk"])
+            ambassador_data = pd.DataFrame(AmbassadorData.objects.filter(created_by=ambassador_id).values())
+            if ambassador_data.empty:
+                response = ResponseHandler([], "Ambassador not exits", True, status.HTTP_200_OK)
+                return response.response_handler()
+
+            result = []
+            for index, user in ambassador_data.iterrows():
+                user_name = user["name"]
+                user_gender = user["gender"]
+                user_mobile = user["mobile"]
+                is_user_approved = user["is_approved"]
+                data = {"user_name": user_name, "user_gender": user_gender, "user_mobile": user_mobile, "user_approved": is_user_approved}
+                result.append(data)
+            total_onboarded_user = len(result)
+            total_earning = 100 # TODO: need logic
+
+            response = ResponseHandler(result, None, False, status.HTTP_200_OK, total_onboarded_user, total_earning)
+            return response.response_handler()
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
+
+
+class LoginViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserProfileSerializer
+    queryset = UserProfile.objects.all()
+    http_method_names = ['get']
+
+    def list(self, request, *args, **kwargs):
+        try:
+            username = request.data["username"]
+            password = request.data["password"]
+
+            user_data = pd.DataFrame(UserProfile.objects.filter(username=username, password=password).values())
+            if user_data.empty:
+                response = ResponseHandler([], "User id or password not correct", True, status.HTTP_200_OK)
+                return response.response_handler()
+
+            result = []
+            for index, user in user_data.iterrows():
+                user_name = user["username"]
+                user_gender = user["gender"]
+                user_role = user["role"]
+                user_total_coins = user["total_coins"]
+                user_total_onboarded_user = user["total_onboarded_user"]
+
+                data = {"user_name": user_name, "user_gender": user_gender}
+                if user_role == 4:
+                    data["user_total_coins"] = user_total_coins
+                    data["user_total_onboarded_user"] = user_total_onboarded_user
+                    data["user_role"] = user_role
+
+                result.append(data)
+
+            response = ResponseHandler(result, "User Exist", False, status.HTTP_200_OK)
+            return response.response_handler()
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = UserProfileSerializer
     queryset = UserProfile.objects.all()
-    http_method_names = ['get', 'post', 'patch']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def list(self, request, *args, **kwargs):
+        user_data = pd.DataFrame(UserProfile.objects.values())
+        if user_data.empty:
+            response = ResponseHandler([], "Data not found", True, status.HTTP_200_OK)
+            return response.response_handler()
+
+        result = []
+        for index, user in user_data.iterrows():
+            user_name = user["username"]
+            user_gender = user["gender"]
+            user_role = user["role"]
+            user_total_coins = user["total_coins"]
+            user_total_onboarded_user = user["total_onboarded_user"]
+
+            data = {"user_name": user_name, "user_gender": user_gender}
+            if user_role == 4:
+                data["user_total_coins"] = user_total_coins
+                data["user_total_onboarded_user"] = user_total_onboarded_user
+
+            result.append(data)
+
+        response = ResponseHandler(result, "User Exist", False, status.HTTP_200_OK)
+        return response.response_handler()
+
+    def retrieve(self, request, *args, **kwargs):
+        user_id = int(kwargs["pk"])
+        user_data = pd.DataFrame(UserProfile.objects.filter(id=user_id).values())
+        if user_data.empty:
+            response = ResponseHandler([], "User not exits", True, status.HTTP_200_OK)
+            return response.response_handler()
+
+        result = []
+        for index, user in user_data.iterrows():
+            user_name = user["username"]
+            user_gender = user["gender"]
+            user_role = user["role"]
+            user_total_coins = user["total_coins"]
+            user_total_onboarded_user = user["total_onboarded_user"]
+
+            data = {"user_name": user_name, "user_gender": user_gender}
+            if user_role == 4:
+                data["user_total_coins"] = user_total_coins
+                data["user_total_onboarded_user"] = user_total_onboarded_user
+
+            result.append(data)
+
+        response = ResponseHandler(result, "User Exist", False, status.HTTP_200_OK)
+        return response.response_handler()
+
+    @action(methods=['POST'], detail=False)
+    def update_ambassador_details(self, request):
+        onboarded_by = request.data["onboarded_by"]
+        onboarded_data = request.data["onboarded_data"]
+
+        for user in onboarded_data:
+            try:
+                obj = UserProfile.objects.get(mobile=user["user_mobile"], role=2)
+                obj.created_by = onboarded_by
+                obj.save()
+            except Exception as e:
+                pass
+
+        response = ResponseHandler([], "User Successfully Updated", False, status.HTTP_200_OK)
+        return response.response_handler()
 
     def create(self, request, *args, **kwargs):
         try:
@@ -25,6 +186,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             errors = request_data_validation.has_errors()
             if errors:
                 response = ResponseHandler([], str(errors), True, status.HTTP_400_BAD_REQUEST)
+                return response.response_handler()
+
+            email = request.data.get('email')
+            mobile = request.data.get('mobile')
+            user_data = pd.DataFrame(UserProfile.objects.filter(email=email, mobile=mobile).values())
+            if not user_data.empty:
+                response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)
                 return response.response_handler()
 
             user_creation_resp = super(UserProfileViewSet, self).create(request)
