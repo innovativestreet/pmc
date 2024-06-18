@@ -36,8 +36,9 @@ schema_view = get_schema_view(
 
 router = DefaultRouter()
 router.register(r'login', pmc_views.LoginViewSet, basename='login')
+router.register(r'admin', pmc_views.AdminViewSet, basename='admin')
 router.register(r'ambassador', pmc_views.AmbassadorViewSet, basename='ambassador')
-router.register(r'user', pmc_views.UserProfileViewSet, basename='user_profile')
+router.register(r'user', pmc_views.UserProfileViewSet, basename='user')
 router.register(r'question', pmc_views.QuestionMasterViewSet, basename='question')
 router.register(r'question_answer_mapping', pmc_views.AnswerMasterViewSet, basename='question_answer_mapping')
 
