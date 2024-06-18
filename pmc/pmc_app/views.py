@@ -15,6 +15,43 @@ from pmc_app.searializers import AmbassadorDataSerializer, UserProfileSerializer
     QuestionCategoryMasterSerializer, QuestionTypeMasterSerializer, AgeGroupMasterSerializer
 
 
+class AdminViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = AmbassadorDataSerializer
+    queryset = AmbassadorData.objects.all()
+    http_method_names = ['get']
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            admin_id = int(kwargs["pk"])
+            admin_data = pd.DataFrame(UserProfile.objects.filter(id=admin_id, role=100).values())
+            if admin_data.empty:
+                response = ResponseHandler([], "Admin not exits", True, status.HTTP_200_OK)
+                return response.response_handler()
+
+            admin_name = admin_data["name"][0]
+            ambassador_data = pd.DataFrame(UserProfile.objects.filter(role=4).values())
+
+            result = []
+            for index, ambassador in ambassador_data.iterrows():
+                ambassador_id = ambassador["id"]
+                ambassador_name = ambassador["name"]
+                total_onboarded_user = 0
+
+                ambassador_mapping_data = pd.DataFrame(AmbassadorData.objects.filter(created_by=ambassador_id).values())
+                if not ambassador_data.empty:
+                    total_onboarded_user = len(ambassador_mapping_data)
+
+                data = {"ambassador_id": ambassador_id, "ambassador_name": ambassador_name, "total_onboarded_user": total_onboarded_user}
+                result.append(data)
+
+            response = ResponseHandler(result, None, False, status.HTTP_200_OK, None, None)
+            return response.response_handler()
+        except Exception as e:
+            response = ResponseHandler([], "Something went wrong", True, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.response_handler()
+
+
 class AmbassadorViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = AmbassadorDataSerializer
@@ -103,17 +140,17 @@ class LoginViewSet(viewsets.ModelViewSet):
 
             result = []
             for index, user in user_data.iterrows():
+                user_id = user["id"]
                 user_name = user["username"]
                 user_gender = user["gender"]
                 user_role = user["role"]
                 user_total_coins = user["total_coins"]
                 user_total_onboarded_user = user["total_onboarded_user"]
 
-                data = {"user_name": user_name, "user_gender": user_gender}
+                data = {"user_id": user_id, "user_name": user_name}
                 if user_role == 4:
                     data["user_total_coins"] = user_total_coins
                     data["user_total_onboarded_user"] = user_total_onboarded_user
-                    data["user_role"] = user_role
 
                 result.append(data)
 
@@ -212,6 +249,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 response = ResponseHandler([], "User already exits", True, status.HTTP_200_OK)
                 return response.response_handler()
 
+            request.data["username"] = email
+            request.data["password"] = mobile
             user_creation_resp = super(UserProfileViewSet, self).create(request)
 
             if user_creation_resp.status_code not in [200, 201]:
